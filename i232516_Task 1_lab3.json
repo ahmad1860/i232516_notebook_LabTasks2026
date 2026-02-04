@@ -1,0 +1,366 @@
+{
+  "name": "i232516_Task 1",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "filters": {}
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -16,
+        -96
+      ],
+      "id": "a12e12e4-5ee3-4d82-8aa4-63169917fc19",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "49EQtHUH3a3ozPbD",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "98e3a802-c278-43ab-a5bd-207918e98a4c",
+              "name": "Subject",
+              "value": "={{ $json.Subject }}",
+              "type": "string"
+            },
+            {
+              "id": "2f12d108-4eb0-47d9-88c6-a1e70d4a92a3",
+              "name": "Body",
+              "value": "={{ $json.snippet }}",
+              "type": "string"
+            },
+            {
+              "id": "167e2b78-9a90-4ca4-9bdd-08a1a76f0ecb",
+              "name": "From",
+              "value": "={{ $json.From }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        224,
+        -96
+      ],
+      "id": "c7ba6283-5960-4288-a134-930bf3cd33c8",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.Body }}\n\n\n",
+        "options": {
+          "systemMessage": "\nYou are an email classifier for an academic instructor named XYZ.\n\nClassify the email into ONLY one of the following labels:\n\n1. Lab_Query\n2. Departmental_Meeting\n3. Ignored\nRules:\n- Lab_Query: student asking about lab work, submissions, issues, marks, deadlines\n- Departmental_Meeting: emails about meetings, schedules, departmental matters, urgent discussions\n- Ignored: anything else\nReturn ONLY one word exactly from:\nLab_Query\nDepartmental_Meeting\nIgnored"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        448,
+        -96
+      ],
+      "id": "03ed5625-3ce2-4c79-82db-46dbe5b7b2b7",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        320,
+        112
+      ],
+      "id": "200cbb06-f4ca-49f9-8bba-b42a67729c6d",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "uWUsDXxZIaDwfuJG",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.output }}",
+                    "rightValue": "Ignored",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "8d2913e3-165e-4125-8999-c47a6cec3982"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "48bfc434-3b8d-47a8-a2ec-28b2950ec26e",
+                    "leftValue": "={{ $json.output }}",
+                    "rightValue": "Lab_Query",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "48044fba-8a17-4047-be63-ac4cdc77ccf2",
+                    "leftValue": "={{ $json.output }}",
+                    "rightValue": "Departmental_Meeting",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        800,
+        -112
+      ],
+      "id": "c8ef77f4-8cdc-45dd-b16a-d2b821aaa7d5",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "=You are an assistant of XYZ, Instructor.\nWrite a professional draft email asking the student to provide:\n- Registration Number\n- Section\n- Course / Subject Code\n- Clear description of the lab issue\nTone: polite, professional, clear."
+            },
+            {
+              "content": "=Subject :   {{ $('Edit Fields').item.json.Subject }}\n\nBody: {{ $('Edit Fields').item.json.Body }}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        1136,
+        -112
+      ],
+      "id": "7717323a-d912-4dd7-90fd-5ea93a2e0a93",
+      "name": "Message a model",
+      "credentials": {
+        "openAiApi": {
+          "id": "uWUsDXxZIaDwfuJG",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "draft",
+        "subject": "=Re - {{ $('Switch').item.json.output }} ",
+        "message": "={{ $json.output[0].content[0].text }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1488,
+        -112
+      ],
+      "id": "62943209-0e17-4cda-9b0c-dbc7934a574c",
+      "name": "Create a draft",
+      "webhookId": "54b4cc51-503f-4e8c-b9b4-f081f9097a42",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "49EQtHUH3a3ozPbD",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "addLabels",
+        "messageId": "={{ $('Gmail Trigger').item.json.id }}",
+        "labelIds": [
+          "Label_3687619028702716313"
+        ]
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1152,
+        64
+      ],
+      "id": "8bc888de-d66b-42a3-89da-293e26f8636a",
+      "name": "Add label to message",
+      "webhookId": "d2dda731-2467-4b75-8604-ffba0516abd4",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "49EQtHUH3a3ozPbD",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Add label to message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Create a draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "92022580-bf02-4db8-ba6e-768cd0a0a542",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "f7376540fc7bd2d251e04909dcf400ce6a8a86abacecf055633ec51614827529"
+  },
+  "id": "CSgHljvgq0fFqJxg5JJrO",
+  "tags": []
+}
